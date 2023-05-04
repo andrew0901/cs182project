@@ -89,7 +89,101 @@ class ASODataset(Dataset):
                     train_X.append(X)
                     train_y.append(y)
             return train_X, test_X, train_y, test_y
+
+    def sample_test_data_catalyst_only(self, acid_num, thiol_num, imine_num):
+        #return a training set and at test set
+        #randomly select acid_num numbers of acids to be in the test set, same for thiol and imine
+        assert acid_num < 43, "Please sample less than 43 phosphorus acid"
+        assert thiol_num < 5, "Please sample less than 5 thiols"
+        assert imine_num < 5, "Please sample less than 5 imines"
+
+        acids = list(self.ligand_dict.values())
+
+        test_acids = set(random.sample(acids, k=acid_num))
+
         
+        if not self.no_graph:
+            training_set = []
+            test_set = []
+            for d in self.data:
+                if d.acid in test_acids:
+                    test_set.append(d)
+                elif d.acid not in test_acids:
+                    training_set.append(d)
+            return training_set, test_set
+        else:
+            train_X = []
+            test_X = []
+            train_y = []
+            test_y = []
+            for j in range(len(self.data[0])):
+                X = self.data[0][j]
+                y = self.data[1][j]
+                a_sampled = False
+                for i in range(43):
+                    if X[i] == 1:
+                        if acids[i] in test_acids:
+                            a_sampled = True
+                        break
+                if a_sampled:
+                    test_X.append(X)
+                    test_y.append(y)
+                else:
+                    train_X.append(X)
+                    train_y.append(y)
+            return train_X, test_X, train_y, test_y
+        
+    def sample_test_data_reactant_only(self, acid_num, thiol_num, imine_num):
+        #return a training set and at test set
+        #randomly select acid_num numbers of acids to be in the test set, same for thiol and imine
+        assert acid_num < 43, "Please sample less than 43 phosphorus acid"
+        assert thiol_num < 5, "Please sample less than 5 thiols"
+        assert imine_num < 5, "Please sample less than 5 imines"
+
+        thiols = ['A','B','C','D','E']
+        imines = ['1','2','3','4','5']
+
+        test_thiols = set(random.sample(thiols, k=thiol_num))
+        test_imines = set(random.sample(imines, k=imine_num))
+
+        
+        if not self.no_graph:
+            training_set = []
+            test_set = []
+            for d in self.data:
+                if d.thiol in test_thiols and d.imine in test_imines:
+                    test_set.append(d)
+                elif (d.thiol not in test_thiols) and (d.imine not in test_imines):
+                    training_set.append(d)
+            return training_set, test_set
+        else:
+            train_X = []
+            test_X = []
+            train_y = []
+            test_y = []
+            for j in range(len(self.data[0])):
+                X = self.data[0][j]
+                y = self.data[1][j]
+                t_sampled = False
+                i_sampled = False
+                for i in range(5):
+                    if X[i+43] == 1:
+                        if thiols[i] in test_thiols:
+                            t_sampled = True
+                        break
+                for i in range(5):
+                     if X[i+48] == 1:
+                        if imines[i] in test_imines:
+                            i_sampled = True
+                        break
+                if t_sampled and i_sampled:
+                    test_X.append(X)
+                    test_y.append(y)
+                elif (not t_sampled) and (not i_sampled):
+                    train_X.append(X)
+                    train_y.append(y)
+            return train_X, test_X, train_y, test_y
+
     def read_from_csv(self):
         #generate a dictionary of ligand
         if ASODataset.initiated:

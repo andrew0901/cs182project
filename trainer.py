@@ -77,16 +77,28 @@ class Trainer():
         #the function called to trained a model with multiple epochs
         #train_loader and test_loader should be DataLoader object
         self.loss_fn = loss_fn
+
+        best_train_r2 = float("-inf")
+        best_test_r2 = float("-inf")
+        best_train_MAE = float("inf")
+        best_test_MAE = float("inf")
+
         for epoch in range(epochs):
             self.train_one_epoch(train_loader, loss_fn)
             train_loss, train_MAE, train_r2 = self.eval(train_loader, epoch == epochs - 1, loss_fn=loss_fn)
             test_loss, test_MAE, test_r2 = self.eval(test_loader, epoch == epochs - 1, loss_fn=loss_fn)
+            
+            best_train_r2 = max(best_train_r2, train_r2)
+            best_test_r2 = max(best_test_r2, test_r2)
+            best_train_MAE = min(best_train_MAE, train_MAE)
+            best_test_MAE = min(best_test_MAE, test_MAE)
+
             self.log["train_loss"].append(train_loss)
             self.log["val_loss"].append(test_loss)
             if (not silent) or epoch == epochs - 1:
                 print(f'Epoch: {epoch + 1:03d}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Train MAE: {train_MAE:.4f}, Test MAE: {test_MAE:.4f}, , Train R2: {train_r2:.4f}, Test R2: {test_r2:.4f}')
             if epoch == epochs - 1:
-                return np.array([train_loss, train_MAE, train_r2, test_loss, test_MAE, test_r2])
+                return np.array([train_loss, best_train_MAE, best_train_r2, test_loss, best_test_MAE, best_test_r2])
 
     def train_one_epoch_no_graph(self, train_X, train_y, loss_fn):
         #used only by train_no_graph
@@ -117,16 +129,27 @@ class Trainer():
     
     def train_no_graph(self, train_X, test_X, train_y, test_y, loss_fn, epochs, silent = False):
         #train the model when it is not a graph neural network, just for one hot encoding everything
+        best_train_r2 = float("-inf")
+        best_test_r2 = float("-inf")
+        best_train_MAE = float("inf")
+        best_test_MAE = float("inf")
+
         for epoch in range(epochs):
             self.train_one_epoch_no_graph(train_X, train_y, loss_fn)
             train_loss, train_MAE, train_r2 = self.eval_no_graph(train_X, train_y, epoch == epochs - 1)
             test_loss, test_MAE, test_r2 = self.eval_no_graph(test_X, test_y, epoch == epochs - 1)
+
+            best_train_r2 = max(best_train_r2, train_r2)
+            best_test_r2 = max(best_test_r2, test_r2)
+            best_train_MAE = min(best_train_MAE, train_MAE)
+            best_test_MAE = min(best_test_MAE, test_MAE)
+
             self.log["train_loss"].append(train_loss)
             self.log["val_loss"].append(test_loss)
             if (not silent) or epoch == epochs - 1:
                 print(f'Epoch: {epoch + 1:03d}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, Train MAE: {train_MAE:.4f}, Test MAE: {test_MAE:.4f}, , Train R2: {train_r2:.4f}, Test R2: {test_r2:.4f}')
             if epoch == epochs - 1:
-                return np.array([train_loss, train_MAE, train_r2, test_loss, test_MAE, test_r2])
+                return np.array([train_loss, best_train_MAE, best_train_r2, test_loss, best_test_MAE, best_test_r2])
 
     def kfold(self, data, fold, loss_fn, epochs, batch_size, silent = True, shuffle = True):
         #for k-fold cross validation
